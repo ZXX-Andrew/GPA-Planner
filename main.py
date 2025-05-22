@@ -393,36 +393,66 @@ class GPAPlanner(QMainWindow):
                 QMessageBox.warning(self, "Warning", "Target grade is impossible to achieve")
                 return
             
-            # Show possible distributions
-            for i, distribution in enumerate(distributions[:3]):  # Show top 3 distributions
-                dist_container = QWidget()
-                dist_layout = QVBoxLayout(dist_container)
+            # Show the distribution
+            dist_container = QWidget()
+            dist_layout = QVBoxLayout(dist_container)
+            
+            dist_label = QLabel("Required Scores:")
+            dist_layout.addWidget(dist_label)
+            
+            # Create sliders for each component
+            slider_values = {}  # Store slider values for each component
+            slider_labels = {}  # Store slider labels for each component
+            
+            for component, initial_score in distributions[0].items():
+                slider_container = QWidget()
+                slider_container_layout = QVBoxLayout(slider_container)
                 
-                dist_label = QLabel(f"Option {i+1}:")
-                dist_layout.addWidget(dist_label)
+                # Add slider
+                slider_layout = QHBoxLayout()
+                slider_label = QLabel(f"{component} Required Score:")
+                slider = QSlider(Qt.Orientation.Horizontal)
+                slider.setRange(0, 10000)  # Use larger range for better precision
+                slider.setValue(int(initial_score * 100))  # Scale up for precision
+                value_label = QLabel(f"{initial_score:.2f}%")
                 
-                # Calculate predicted grade for this distribution
-                for comp in remaining_components:
-                    comp.score = distribution[comp.name]
-                predicted_grade = GradeCalculator.calculate_current_grade(course.components)
+                # Store the value label for this component
+                slider_labels[component] = value_label
+                slider_values[component] = initial_score
                 
-                for component, score in distribution.items():
-                    comp_layout = QHBoxLayout()
-                    comp_label = QLabel(f"{component}:")
-                    score_label = QLabel(f"{score:.2f}%")
-                    comp_layout.addWidget(comp_label)
-                    comp_layout.addWidget(score_label)
-                    dist_layout.addLayout(comp_layout)
+                def create_update_function(comp, slider_widget, value_label):
+                    def update_predicted_grade(value):
+                        # Convert slider value to actual score (0-100)
+                        actual_score = value / 100.0
+                        # Update component score
+                        for c in course.components:
+                            if c.name == comp:
+                                c.score = actual_score
+                        # Update stored value
+                        slider_values[comp] = actual_score
+                        # Update label
+                        value_label.setText(f"{actual_score:.2f}%")
+                        # Calculate new predicted grade
+                        predicted_grade = GradeCalculator.calculate_current_grade(course.components, True)
+                        self.predicted_grade_label.setText(f"Predicted Grade: {predicted_grade:.2f}%")
+                    return update_predicted_grade
                 
-                # Add predicted grade for this distribution
-                pred_label = QLabel(f"Predicted Grade: {predicted_grade:.2f}%")
-                dist_layout.addWidget(pred_label)
+                slider.valueChanged.connect(create_update_function(component, slider, value_label))
                 
-                self.planning_layout.addWidget(dist_container)
+                slider_layout.addWidget(slider_label)
+                slider_layout.addWidget(slider)
+                slider_layout.addWidget(value_label)
                 
-                # Reset component scores after calculation
-                for comp in remaining_components:
-                    comp.score = 0.0
+                slider_container_layout.addLayout(slider_layout)
+                dist_layout.addWidget(slider_container)
+           
+            self.planning_layout.addWidget(dist_container)
+            
+            # Initial predicted grade calculation
+            for comp in remaining_components:
+                comp.score = distributions[0][comp.name]
+            initial_predicted_grade = GradeCalculator.calculate_current_grade(course.components, True)
+            self.predicted_grade_label.setText(f"Predicted Grade: {initial_predicted_grade:.2f}%")
 
 def main():
     app = QApplication(sys.argv)

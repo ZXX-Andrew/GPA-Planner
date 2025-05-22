@@ -29,28 +29,21 @@ class GradeCalculator:
     
     @staticmethod
     def calculate_grade_distribution(components, target_grade, remaining_components):
-        """Calculate possible grade distributions for remaining components."""
-        current_grade = GradeCalculator.calculate_current_grade(components)
+        """Calculate a balanced grade distribution for remaining components based on their weights."""
+        current_true_grade = sum(c.score * c.weight for c in components if not c.is_variable)  / 100
         remaining_weight = sum(c.weight for c in remaining_components)
         
         if remaining_weight == 0:       
             return None
         
         # Calculate minimum required average score
-        min_required = (target_grade - current_grade) / remaining_weight * 100
+        min_required = (target_grade - current_true_grade) / remaining_weight * 100
         
         if min_required > 100:
             return None  # Target grade is impossible to achieve
         
-        # Generate possible distributions
-        distributions = []
+        # Calculate a single balanced distribution
         base_score = max(0, min(100, min_required))
+        distribution = {comp.name: base_score for comp in remaining_components}
         
-        # Add some variation to the base score
-        for i in range(-5, 6):
-            score = base_score + i
-            if 0 <= score <= 100:
-                distribution = {comp.name: score for comp in remaining_components}
-                distributions.append(distribution)
-        
-        return distributions 
+        return [distribution]  # Return as a list to maintain compatibility with existing code 
