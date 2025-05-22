@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QHBoxLayout, QLabel, QLineEdit, QPushButton,
                             QComboBox, QSpinBox, QDoubleSpinBox, QTabWidget,
                             QScrollArea, QGroupBox, QFileDialog, QSlider,
-                            QMessageBox)
+                            QMessageBox, QCheckBox)
 from PyQt6.QtCore import Qt
 import pandas as pd
 from grade_calculator import GradeCalculator
@@ -13,7 +13,7 @@ class CourseComponent:
         self.name = name
         self.weight = weight
         self.score = 0.0
-        self.is_graded = False  # Flag to indicate if the component has been graded
+        self.is_variable = True # Flag to indicate if the component is variable
 
 class Course:
     def __init__(self, name):
@@ -245,22 +245,40 @@ class GPAPlanner(QMainWindow):
             component_layout = QHBoxLayout()
             
             name_label = QLabel(component.name)
+            
+            # Add checkbox for is_variable
+            variable_checkbox = QCheckBox("Variable in Calculations")
+            
+            variable_checkbox.setChecked(component.is_variable)
+            variable_checkbox.stateChanged.connect(
+                lambda state, c=component: self.update_component_variable(c, state)
+            )
+            
             score_input = QDoubleSpinBox()
             score_input.setRange(0, 100)
             score_input.setDecimals(2)  # Set precision to 2 decimal places
             score_input.setValue(component.score)
             score_input.valueChanged.connect(
-                lambda value, c=component: self.update_component_score(c, value)
+                lambda value, c=component, vc=variable_checkbox: self.update_component_score(c, vc, value)
             )
+            
+            
             
             component_layout.addWidget(name_label)
             component_layout.addWidget(score_input)
+            component_layout.addWidget(variable_checkbox)
             
             self.grade_input_layout.addLayout(component_layout)
     
-    def update_component_score(self, component, score):
+    def update_component_score(self, component, variable_checkbox, score):
         component.score = score
-        component.is_graded = True  # Set the graded flag when a score is entered
+        if score > 0:  # Only set is_variable to true if there's a score
+            component.is_variable = False
+            variable_checkbox = variable_checkbox.setChecked(component.is_variable)
+        self.update_planning()
+    
+    def update_component_variable(self, component, state):
+        component.is_variable = (state == Qt.CheckState.Checked.value)
         self.update_planning()
     
     def import_grades(self):
@@ -309,7 +327,7 @@ class GPAPlanner(QMainWindow):
         self.current_grade_label.setText(f"Current Grade: {current_grade:.2f}%")
         
         # Get remaining components (those that haven't been graded)
-        remaining_components = [c for c in course.components if not c.is_graded]
+        remaining_components = [c for c in course.components if c.is_variable]
         
         if not remaining_components:
             QMessageBox.information(self, "Info", "No remaining components to plan")
@@ -345,7 +363,9 @@ class GPAPlanner(QMainWindow):
                 actual_score = value / 100.0
                 # Calculate predicted grade based on slider value
                 component.score = actual_score
-                predicted_grade = GradeCalculator.calculate_current_grade(course.components)
+                
+                predicted_grade = GradeCalculator.calculate_current_grade(course.components, True)
+                # print('OVO',predicted_grade)
                 self.predicted_grade_label.setText(f"Predicted Grade: {predicted_grade:.2f}%")
                 slider_value.setText(f"{actual_score:.2f}%")
             
