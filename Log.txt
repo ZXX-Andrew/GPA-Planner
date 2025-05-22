@@ -1,0 +1,9 @@
+Finished:
+1. single component & multiple componets with sliders and defualt target settings (6h)
+    - notice that sliders is difficult to debug! use it wisely
+
+Require:
+- "Tasks" function. Try to merge the function of components with the tasks under different section
+- Try to add defualt section template to the different sections(e.g. minor/major/final)
+- Add/fix "import" function
+- DEBUG!!!
