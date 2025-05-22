@@ -1,6 +1,0 @@
-Here is still some bugs, the change of slidebar cannot be synced with the display of predicted score. Second you should make the default number display on slidebar to be a number with only precision on 0.01 since higher precision is impossible for student to control
-
-And another error is that when switching to difference course, if the name of the component is same, they will mixed the value with different course. Second, the display of another course should be closed when switching to other courses
-
-Besides, you should make a flag of controling whether the component is variable instead of only depend on the first edition of it. If I want to calculate it in the future, I should be able to see the predicted plan instead of only making it a fixed valure. However you can make the flag to be set to represent invariable when first version of score is set.
-At last, when considering multiple components to be variable, your programm of suggesting multiple plans do not work at all! not even a single corresponding predficted score is correct nor do the predicted score is satisfyed with the aim score
